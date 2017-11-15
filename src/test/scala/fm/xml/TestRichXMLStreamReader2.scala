@@ -98,14 +98,47 @@ final class TestRichXMLStreamReader2 extends FunSuite with Matchers {
     
     builder.result should equal (Vector("Item 1 Name", "Item 2 Name"))
   }
-  
+
+  test("readElementAsXMLString") {
+    var sr = createSR()
+
+    sr.seekToRootElement()
+    sr.seekToChildElement("items")
+    sr.readElementAsXMLString should equal (
+      """<items>
+        |    <item idx="1">
+        |      <name>Item 1 Name</name>
+        |    </item>
+        |    <item idx="2">
+        |      <name>Item 2 Name</name>
+        |    </item>
+        |    <items>
+        |      <item idx="1">
+        |        <name>Sub Item 1 name</name>
+        |      </item>
+        |    </items>
+        |  </items>""".stripMargin)
+  }
+
+  test("readElementContentsAsXMLString") {
+    var sr = createSR()
+    val builder = Vector.newBuilder[String]
+
+    sr.seekToRootElement()
+    sr.seekToChildElement("header")
+    sr.readElementContentsAsXMLString should equal (
+      """
+        |    <name>Header Name</name>
+        |  """.stripMargin)
+  }
+
   private def createSR(): XMLStreamReader2 = {
     val inputFactory = new WstxInputFactory()
     inputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false)
     inputFactory.configureForSpeed()
     inputFactory.createXMLStreamReader(new StringReader(xml)).asInstanceOf[XMLStreamReader2]
   }
-  
+
 val xml = """
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
@@ -119,6 +152,11 @@ val xml = """
     <item idx="2">
       <name>Item 2 Name</name>
     </item>
+    <items>
+      <item idx="1">
+        <name>Sub Item 1 name</name>
+      </item>
+    </items>
   </items>
   <trailer>
     <name>Trailer Name</name>

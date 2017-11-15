@@ -15,9 +15,13 @@
  */
 package fm.xml
 
+import fm.common.Resource
+import java.io.StringWriter
 import org.codehaus.stax2.XMLStreamReader2
 import javax.xml.stream.XMLStreamConstants._
-import javax.xml.stream.XMLStreamException
+import javax.xml.stream._
+import javax.xml.stream.events.XMLEvent
+
 import scala.annotation.switch
 
 object RichXMLStreamReader2 {
@@ -25,6 +29,7 @@ object RichXMLStreamReader2 {
 }
 
 final class RichXMLStreamReader2(val sr: XMLStreamReader2) extends AnyVal {
+  import fm.common.Resource.toCloseable
   /**
    * Opposite of XMLStreamReader.require()
    */
@@ -194,7 +199,49 @@ final class RichXMLStreamReader2(val sr: XMLStreamReader2) extends AnyVal {
     
     text
   }
-  
+
+  def readElementAsXMLString(): String = readElementAsXMLStringImpl(true)
+  def readElementContentsAsXMLString(): String = readElementAsXMLStringImpl(false)
+
+  private def readElementAsXMLStringImpl(includeElement: Boolean): String = {
+    sr.require(START_ELEMENT, null, null)
+
+    Resource.using(XMLInputFactory.newInstance.createXMLEventReader(sr)) { eventReader: XMLEventReader =>
+      Resource.using(new StringWriter) { sw: StringWriter =>
+        Resource.using(XMLOutputFactory.newInstance.createXMLEventWriter(sw)) { eventWriter: XMLEventWriter =>
+          val targetTag: String = sr.getName.getLocalPart
+          var done: Boolean = false
+          var counter: Int = 0 // Keep track of this tag, and allow nested "detail" tags too
+
+          while (!done && eventReader.hasNext()) {
+            val event: XMLEvent = eventReader.nextEvent()
+
+            if (event.getEventType == START_ELEMENT && event.asStartElement.getName.getLocalPart == targetTag)  {
+              if (includeElement) {
+                eventWriter.add(event)
+              }
+
+              counter += 1
+            } else if (event.getEventType == END_ELEMENT && event.asEndElement.getName.getLocalPart == targetTag) {
+              if (includeElement && counter > 0) {
+                eventWriter.add(event)
+              }
+
+              counter -= 1
+            } else if (counter > 0) {
+              eventWriter.add(event)
+            }
+
+            if (counter == 0) done = true
+          }
+
+          eventWriter.flush
+          sw.toString
+        }
+      }
+    }
+  }
+
   def tryReadChildElementText(name: String): Option[String] = {
     if (trySeekToChildElement(name)) {
       val text: String = readElementText()
