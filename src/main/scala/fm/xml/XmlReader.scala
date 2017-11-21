@@ -19,14 +19,14 @@ import com.ctc.wstx.stax.WstxInputFactory
 import fm.common.Implicits._
 import fm.common.{Logging, Resource}
 import fm.lazyseq.ResourceLazySeq
-import java.io.{InputStream, Reader}
+import java.io.{ByteArrayInputStream, InputStream, Reader}
+import java.nio.charset.StandardCharsets
 import javax.xml.bind.{JAXBContext, Unmarshaller}
 import javax.xml.stream.XMLInputFactory
 import javax.xml.stream.XMLStreamConstants.START_ELEMENT
 import org.codehaus.stax2.XMLStreamReader2
 import org.codehaus.stax2.util.StreamReader2Delegate
 import scala.reflect.{ClassTag, classTag}
-
 import RichXMLStreamReader2.toRichXMLStreamReader2
 
 object XmlReader {
@@ -39,7 +39,11 @@ object XmlReader {
     import Resource._
     Resource.using(inputFactory.createXMLStreamReader(is).asInstanceOf[XMLStreamReader2])(f)
   }
-    
+
+  def withXMLStreamReader2[T](s: String)(f: XMLStreamReader2 => T): T = {
+    withXMLStreamReader2(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8)))(f)
+  }
+
   /**
    * Overrides the defaultNamespaceURI on elements/attributes.  This is used for the PIES feeds when the default namespace is not set
    * in the feed but JAXB expects the default namespace to be "http://www.aftermarket.org"
