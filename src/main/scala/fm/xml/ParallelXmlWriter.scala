@@ -20,8 +20,15 @@ import java.io.{ByteArrayOutputStream, Closeable, OutputStream}
 import javax.xml.bind.{JAXBContext, Marshaller}
 import scala.reflect.{ClassTag, classTag}
 
-final class ParallelXmlWriter[T: ClassTag](rootName: String, itemName: String, outputStream: OutputStream) extends Closeable {
-  private[this] val jaxbContext: JAXBContext = JAXBContext.newInstance(classTag[T].runtimeClass)
+object ParallelXmlWriter {
+  // Backward compatible constructor
+  def apply[T: ClassTag](rootName: String, itemName: String, outputStream: OutputStream): ParallelXmlWriter[T] = {
+    ParallelXmlWriter(Seq(classTag[T].runtimeClass), rootName, outputStream)
+  }
+}
+
+final case class ParallelXmlWriter[T](classes: Seq[Class[_]], rootName: String, outputStream: OutputStream) extends Closeable {
+  private[this] val jaxbContext: JAXBContext = JAXBContext.newInstance(classes: _*)
   
   private[this] val encoding: String = "UTF-8"
   

@@ -23,6 +23,8 @@ final class SimpleFeedPart {
   @BeanProperty var uniqueId: String = _
   @BeanProperty var source: String = _
   @BeanProperty var name: String = _
+
+  override def toString: String = s"SimpleFeedPart($uniqueId, $source, $name)"
 }
 
 final class TestXmlReaderWriter extends FunSuite with Matchers {
@@ -264,5 +266,5 @@ final class TestXmlReaderWriter extends FunSuite with Matchers {
     part.name should equal(name)
   }
   
-  private def makeReader(xml: String, root: String = "feed", item: String = "part"): Iterator[SimpleFeedPart] = XmlReaderWriter[SimpleFeedPart](root, item).reader(new StringReader(xml)).toIndexedSeq.iterator
+  private def makeReader(xml: String, root: String = "feed", item: String = "part"): Iterator[SimpleFeedPart] = XmlReaderFactory[SimpleFeedPart](root, item).reader(new StringReader(xml)).toIndexedSeq.iterator
 }

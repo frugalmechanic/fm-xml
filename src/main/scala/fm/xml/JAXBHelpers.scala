@@ -28,7 +28,7 @@ class JAXBHelpers[T: ClassTag](
   indent: String = "  "
 ) {
 
-  final val xmlReaderWriter: XmlReaderWriter[T] = XmlReaderWriter(rootElement, itemPath, defaultNamespaceURI = defaultNamespaceURI, overrideDefaultNamespaceURI = overrideDefaultNamespaceURI)
+  final val xmlReader: XmlReaderFactory[T] = XmlReaderFactory(rootElement, itemPath, defaultNamespaceURI = defaultNamespaceURI, overrideDefaultNamespaceURI = overrideDefaultNamespaceURI)
   
   final val marshaller: JAXBMarshaller[T] = new JAXBMarshaller[T](packageName = packageName, rootElement = rootElement, fragment = fragment, format = format, indent = indent)
   

@@ -20,13 +20,25 @@ import fm.common.Logging
 import javax.xml.bind.{JAXBContext, Unmarshaller}
 import javax.xml.stream.XMLStreamConstants.START_ELEMENT
 import org.codehaus.stax2.XMLStreamReader2
-import scala.collection.mutable
 import scala.reflect.{ClassTag, classTag}
 
 object XmlReaderPath {
   // Apply helper for reading a non-mapped value
   def apply[XmlValue: ClassTag](itemPath: String): XmlReaderPath[XmlValue, XmlValue] = XmlReaderPath[XmlValue, XmlValue](itemPath, identity)
+
+  sealed trait XmlReaderPathMatchType {
+    def isPrefixMatch: Boolean = this === XmlReaderPathMatchType.PrefixMatches
+    def isElementMatch: Boolean = this === XmlReaderPathMatchType.ElementMatches
+    def isNoMatch: Boolean = this === XmlReaderPathMatchType.NoMatch
+  }
+  object XmlReaderPathMatchType {
+    case object ElementMatches extends XmlReaderPathMatchType
+    case object PrefixMatches extends XmlReaderPathMatchType
+    case object NoMatch extends XmlReaderPathMatchType
+  }
 }
+
+
 
 /**
   *
@@ -39,21 +51,22 @@ final case class XmlReaderPath[XmlValue: ClassTag, MappedXmlValue](
   itemPath: String,
   toMappedValue: XmlValue => MappedXmlValue
 ) extends Logging {
+  import XmlReaderPath._
+
   // Make this public, so we can use it for the XmlWriter JAXBContext
-  private[this] val itemClass: Class[XmlValue] = classTag[XmlValue].runtimeClass.asInstanceOf[Class[XmlValue]]
+  val itemClass: Class[XmlValue] = classTag[XmlValue].runtimeClass.asInstanceOf[Class[XmlValue]]
   private[this] val jaxbContext: JAXBContext = JAXBContext.newInstance(itemClass)
   private[this] val unmarshaller: Unmarshaller = jaxbContext.createUnmarshaller()
 
   // The XPath-like path to the element we are interested in
   // part => Array("part"), items/part => Array("items","part")
-  // This is reversed for easy comparison to the ArrayStack we use
   private[xml] val path: Array[String] = itemPath.split('/')
 
   // The name of the element we care about (last part of the path)
   // items/part => part
   private[xml] val itemName: String = path.last
 
-  private[xml] val targetDepth: Int = path.length - 1
+  private[xml] val targetDepth: Int = path.length
 
   private[xml] def readValue(xmlStreamReader: XMLStreamReader2): MappedXmlValue =  {
     xmlStreamReader.require(START_ELEMENT, null, itemName)
@@ -62,33 +75,37 @@ final case class XmlReaderPath[XmlValue: ClassTag, MappedXmlValue](
     toMappedValue(value)
   }
 
-  // Check to see if the target depth and path match
-  private[xml] def elementMatches(xmlStreamReader: XMLStreamReader2, currentDepth: Int): Boolean = {
-    currentDepth == targetDepth && xmlStreamReader.getLocalName === itemName
-  }
+  /**
+    * Given a current element nesting sequence, getMatchType returns whether this path is an exact match, no match, or if the prefix matches.
+    *
+    * Example: if the itemPath is "items/part" then:
+    *
+    *   When currentPath is Seq("items") the match type will be XmlReaderPathMatchType.PrefixMatches
+    *   When currentPath is Seq("items", "part") the match type will be XmlReaderPathMatchType.ElementMatches
+    *   When currentPath is Seq("items", "price") the match type will be XmlReaderPathMatchType.NoMatch
+    *   When currentPath is Seq("prices") the match type will be XmlReaderPathMatchType.NoMatch
+    *
+    * @param currentPath An IndexedSeq of the current nested XML-element tree.  (e.g. "items/part/price" => Seq("items", "part", "price")
+    * @return
+    */
+  private[xml] def getMatchType(currentPath: IndexedSeq[String]): XmlReaderPathMatchType = {
+    if (currentPath.isEmpty || currentPath.length > targetDepth) return XmlReaderPathMatchType.NoMatch
 
-  private[xml] def pathMatches(xmlStreamReader: XMLStreamReader2, currentPath: mutable.ArrayStack[String]): Boolean = {
-    if (currentPath.length > targetDepth) return false
-    if (currentPath.length === targetDepth && xmlStreamReader.getLocalName =!= itemName) return false
+    // Optimized to avoid a closure
+    var matches: Int = 0
+    var idx: Int = 0
 
-    // Check the previous paths
-    var depth: Int = 0
-    while (depth < currentPath.length) {
-
-      // The stack indexes (in parens) change as the new paths get added
-      // items(0)                                     - current depth 1
-      // items(1) / items2(0)                         - current depth 2
-      // items(2) / items2(1) / items3 (0)            - current depth 3
-      // items(4) / items2(2) / items3 (1) / part (0) - current depth 4
-
-      // The path is static: items(0) / items2(1) / items3 (2) / part (3)
-
-      // When currentPath length is 3, the first item in the currentPath is (currentPath.length - 1), each iteration minus another 1
-      if (currentPath(currentPath.length - 1 - depth) =!= path(depth)) return false
-
-      depth += 1
+    while (matches === idx && idx < currentPath.length) {
+      if (currentPath(idx) === path(idx)) matches += 1
+      idx += 1
     }
 
-    true
+    if (matches === targetDepth) XmlReaderPathMatchType.ElementMatches
+    else if (matches === currentPath.length) XmlReaderPathMatchType.PrefixMatches
+    else XmlReaderPathMatchType.NoMatch
+  }
+
+  override def toString(): String = {
+    s"XmlReaderPath[${itemClass.toString}](itemPath: ${itemPath})"
   }
 }

@@ -24,7 +24,6 @@ import java.io.{InputStream, Reader, StringReader}
 import javax.xml.stream.XMLInputFactory
 import org.codehaus.stax2.XMLStreamReader2
 import org.codehaus.stax2.util.StreamReader2Delegate
-import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -116,6 +115,27 @@ object XmlReader {
       if (getPrefix().isNullOrBlank) overrideDefaultNamespaceURI else super.getNamespaceURI()
     }
   }
+
+
+  private case class ReaderStack(maxSize: Int) extends IndexedSeq[String] {
+    private var depth: Int = 0
+    private val array = new Array[String](maxSize)
+    final def length: Int = depth
+
+    def pushElement(elementName: String): Unit = {
+      depth += 1
+      array(depth-1) = elementName
+    }
+
+    def pop(): Unit = {
+      if (depth > 0) {
+        array(depth-1) = null
+        depth -= 1
+      }
+    }
+
+    def apply(idx: Int): String = array(idx)
+  }
 }
 
 /**
@@ -129,6 +149,8 @@ final case class XmlReader[T](
   protected val resource: Resource[Reader],
   targets: IndexedSeq[XmlReaderPath[_, T]]
 ) extends ResourceLazySeq[T, Reader] with Logging {
+  import XmlReaderPath._
+
   if (defaultNamespaceURI.isNotNullOrBlank) require(overrideDefaultNamespaceURI.isNullOrBlank, "Can't set both defaultNamespaceURI and overrideDefaultNamespaceURI")
   if (overrideDefaultNamespaceURI.isNotNullOrBlank) require(defaultNamespaceURI.isNullOrBlank, "Can't set both defaultNamespaceURI and overrideDefaultNamespaceURI")
 
@@ -139,58 +161,81 @@ final case class XmlReader[T](
   }
 
   protected def foreachWithResource[U](f: T => U, reader: Reader): Unit = {
-
     val inputFactory = new WstxInputFactory()
     inputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false)
     inputFactory.configureForSpeed()
 
     import Resource.toCloseable
+    import XmlReader.ReaderStack
 
     Resource.using(wrapXMLStreamReader2(inputFactory.createXMLStreamReader(XmlInvalidCharFilter(reader)).asInstanceOf[XMLStreamReader2])) { xmlStreamReader: XMLStreamReader2 =>
-      val currentPath: mutable.ArrayStack[String] = new mutable.ArrayStack[String]
       var done: Boolean = false
+
+      val maxPathDepth: Int = targets.map{ _.targetDepth }.max
+      val currentPath: ReaderStack = ReaderStack(maxPathDepth)
+
+      @inline def checkAndPopCurrentPath(): Unit = {
+        // If the path goes negative, we need to gracefully close reading
+        if (currentPath.length > 0) currentPath.pop()
+        else done = true
+      }
 
       // Move to the ROOT element (skipping stuff like DTDs) and check it's name and then move to the next parsing event
       xmlStreamReader.seekFirstEventPastRootElement(rootName)
 
       while (!done) {
-        var doNext: Boolean = true
+        var foundMatchingElement: Boolean = false
 
+        // Handle Start Element
         if (xmlStreamReader.isStartElement) {
-          // Do we have paths that match?
-          val matchingPaths: IndexedSeq[XmlReaderPath[_, T]] = targets.filter { _.pathMatches(xmlStreamReader, currentPath) }
+          currentPath.pushElement(xmlStreamReader.getLocalName)
 
-          // We found the parent or child element we are looking for
-          if (matchingPaths.nonEmpty) {
+          // Optimized to avoid a closure
+          var i: Int = 0
+          var currentPathHasCandidatePaths: Boolean = false
+          foundMatchingElement = false
 
-            // Optimized to avoid a closure
-            var i: Int = 0
-            while (doNext && i < matchingPaths.length) {
-              val candidatePath: XmlReaderPath[_, T] = matchingPaths(i)
+          while (!foundMatchingElement && i < targets.length) {
+            val candidatePath: XmlReaderPath[_, T] = targets(i)
 
-              if (candidatePath.elementMatches(xmlStreamReader, currentPath.length)) {
-                f(candidatePath.readValue(xmlStreamReader))
+            val matchType: XmlReaderPathMatchType = candidatePath.getMatchType(currentPath)
 
-                doNext = false // Unmarshalling the element will consume this endElement too
-              }
-              i += 1
+            if (matchType.isPrefixMatch || matchType.isElementMatch) currentPathHasCandidatePaths = true
+
+            if (matchType.isElementMatch) {
+              f(candidatePath.readValue(xmlStreamReader))
+
+              // If we consumed this element, then
+              //   1) it already consumed the end element, so don't trigger the xmlStreamReader.next
+              //   2) we need to pop it from the stack
+              foundMatchingElement = true
+              checkAndPopCurrentPath()
             }
 
-            // Did not find a match, but this is a parent element of whatever child we are looking for, go down into it's children
-            if (doNext) {
-              currentPath.push(xmlStreamReader.getLocalName)
-            }
-          } else {
+            i += 1
+          }
+
+          // Did not find any possible matches, so ignore this path
+          if (!currentPathHasCandidatePaths) {
             // This isn't an element we care about, skip it (including anything under it)
             xmlStreamReader.skipElement()
+            checkAndPopCurrentPath()
           }
+        // Handle End Element
         } else if (xmlStreamReader.isEndElement) {
-          if (currentPath.nonEmpty) currentPath.pop()
-          else done = true // If the currentPath goes negative then we should have reached the end of the XML document
+          checkAndPopCurrentPath()
         }
 
-        if (doNext) {
-          if (xmlStreamReader.hasNext() && !done) xmlStreamReader.next() else done = true
+        // Continue reading the stream
+
+        // If we found the matching element, the end element has already been consumed and the stream should not be .next()ed
+        if (foundMatchingElement) {
+          foundMatchingElement = false
+        // Otherwise step to the next element in the stream
+        } else if (!done && xmlStreamReader.hasNext()) {
+          xmlStreamReader.next()
+        } else if (!xmlStreamReader.hasNext) {
+          done = true
         }
       }
 

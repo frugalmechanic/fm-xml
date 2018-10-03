@@ -15,32 +15,24 @@
  */
 package fm.xml
 
-import fm.common.{FileUtil, InputStreamResource, Resource, SingleUseResource}
-import java.io.{File, InputStream, OutputStream, Reader, StringReader}
+import fm.common.FileUtil
+import java.io.{File, OutputStream}
 import scala.reflect.{ClassTag, classTag}
 
-
-final case class XmlReaderWriter[T: ClassTag](rootName: String, itemName: String, defaultNamespaceURI: String = "", overrideDefaultNamespaceURI: String = "") {
+final case class XmlWriterFactory[T: ClassTag](rootName: String, itemName: String, defaultNamespaceURI: String = "", overrideDefaultNamespaceURI: String = "") {
   private[this] val classes: Seq[Class[_]] = Seq(classTag[T].runtimeClass)
-  
-  def reader(f: File)               : XmlReader[T] = reader(InputStreamResource.forFileOrResource(f))
-  def reader(is: InputStream)       : XmlReader[T] = reader(InputStreamResource.forInputStream(is))
-  def reader(r: InputStreamResource): XmlReader[T] = reader(r.reader())
-  def reader(s: String)             : XmlReader[T] = reader(new StringReader(s))
-  def reader(r: Reader)             : XmlReader[T] = reader(SingleUseResource(r))
-  def reader(r: Resource[Reader])   : XmlReader[T] = XmlReader(rootName, itemName, defaultNamespaceURI, overrideDefaultNamespaceURI, r)
-  
+
   def write(f: File)(fun: XmlWriter => Unit): Unit = {
     FileUtil.writeFile(f, true){ os => write(os)(fun) }
   }
-  
+
   def write(os: OutputStream)(fun: XmlWriter => Unit): Unit = {
     val writer = new XmlWriter(classes, rootName, defaultNamespaceURI, os)
     fun(writer)
     writer.close()
   }
-  
+
   def writer(os: OutputStream): XmlWriter = new XmlWriter(classes, rootName, defaultNamespaceURI, os)
-  
-  def parallelWriter(os: OutputStream): ParallelXmlWriter[T] = new ParallelXmlWriter(rootName, itemName, os)
+
+  def parallelWriter(os: OutputStream): ParallelXmlWriter[T] = ParallelXmlWriter(rootName, itemName, os)
 }

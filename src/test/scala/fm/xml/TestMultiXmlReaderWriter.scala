@@ -24,6 +24,8 @@ import scala.beans.BeanProperty
 final class SimpleFeedPrice {
   @BeanProperty var uniqueId: String = _
   @BeanProperty var price: Double = _
+
+  override def toString: String = s"SimpleFeedPrice($uniqueId, $price)"
 }
 
 // This is mostly a clone of `TestXmlReaderWriter`, except reading multiple different elements
@@ -200,6 +202,7 @@ final class TestMultiXmlReaderWriter extends FunSuite with Matchers with Logging
   <foo><bar>asdasd</bar><part><uniqueId>SKIPME</uniqueId></part></foo>
 </feed>
 """
+
   test("Nested Part - Reading") {
     val reader = makeReader(nestedPartXml, paths=Seq(NestedItemsPartPath, NestedItemsPricePath))
     reader.hasNext should equal(true)
@@ -431,6 +434,6 @@ final class TestMultiXmlReaderWriter extends FunSuite with Matchers with Logging
   }
 
   private def makeReader(xml: String, root: String = "feed", paths: Seq[XmlReaderPath[_, MyPathValue]] = Seq(PartPath, PricePath)): Iterator[MyPathValue] = {
-    XmlReader[MyPathValue]("feed", new StringReader(xml), paths.head, paths.tail:_*).toIndexedSeq.iterator
+    XmlReaderFactory[MyPathValue](root, paths.head, paths.tail:_*).reader(new StringReader(xml)).toIndexedSeq.iterator
   }
 }
