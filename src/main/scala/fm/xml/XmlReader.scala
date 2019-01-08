@@ -115,27 +115,6 @@ object XmlReader {
       if (getPrefix().isNullOrBlank) overrideDefaultNamespaceURI else super.getNamespaceURI()
     }
   }
-
-
-  private case class ReaderStack(maxSize: Int) extends IndexedSeq[String] {
-    private var depth: Int = 0
-    private val array = new Array[String](maxSize)
-    final def length: Int = depth
-
-    def pushElement(elementName: String): Unit = {
-      depth += 1
-      array(depth-1) = elementName
-    }
-
-    def pop(): Unit = {
-      if (depth > 0) {
-        array(depth-1) = null
-        depth -= 1
-      }
-    }
-
-    def apply(idx: Int): String = array(idx)
-  }
 }
 
 /**
@@ -166,13 +145,12 @@ final case class XmlReader[T](
     inputFactory.configureForSpeed()
 
     import Resource.toCloseable
-    import XmlReader.ReaderStack
 
     Resource.using(wrapXMLStreamReader2(inputFactory.createXMLStreamReader(XmlInvalidCharFilter(reader)).asInstanceOf[XMLStreamReader2])) { xmlStreamReader: XMLStreamReader2 =>
       var done: Boolean = false
 
       val maxPathDepth: Int = targets.map{ _.targetDepth }.max
-      val currentPath: ReaderStack = ReaderStack(maxPathDepth)
+      val currentPath: XmlReaderPathStack = new XmlReaderPathStack(maxPathDepth)
 
       @inline def checkAndPopCurrentPath(): Unit = {
         // If the path goes negative, we need to gracefully close reading
@@ -191,18 +169,17 @@ final case class XmlReader[T](
           currentPath.pushElement(xmlStreamReader.getLocalName)
 
           // Optimized to avoid a closure
-          var i: Int = 0
+          var targetsIdx: Int = 0
           var currentPathHasCandidatePaths: Boolean = false
-          foundMatchingElement = false
 
-          while (!foundMatchingElement && i < targets.length) {
-            val candidatePath: XmlReaderPath[_, T] = targets(i)
+          while (!foundMatchingElement && targetsIdx < targets.length) {
+            val candidatePath: XmlReaderPath[_, T] = targets(targetsIdx)
 
             val matchType: XmlReaderPathMatchType = candidatePath.getMatchType(currentPath)
 
-            if (matchType.isPrefixMatch || matchType.isElementMatch) currentPathHasCandidatePaths = true
+            if (matchType.isPrefixMatch || matchType.isFullMatch) currentPathHasCandidatePaths = true
 
-            if (matchType.isElementMatch) {
+            if (matchType.isFullMatch) {
               f(candidatePath.readValue(xmlStreamReader))
 
               // If we consumed this element, then
@@ -212,7 +189,7 @@ final case class XmlReader[T](
               checkAndPopCurrentPath()
             }
 
-            i += 1
+            targetsIdx += 1
           }
 
           // Did not find any possible matches, so ignore this path
@@ -249,8 +226,8 @@ final case class XmlReader[T](
     while (!done && xmlStreamReader.hasNext()) {
       try {
         xmlStreamReader.next()
-        if(xmlStreamReader.isStartElement()) logger.warn("Unexpected start element: "+xmlStreamReader.getLocalName())
-        if(xmlStreamReader.isEndElement()) logger.warn("Unexpected end element: "+xmlStreamReader.getLocalName())
+        if (xmlStreamReader.isStartElement()) logger.warn("Unexpected start element: "+xmlStreamReader.getLocalName())
+        if (xmlStreamReader.isEndElement()) logger.warn("Unexpected end element: "+xmlStreamReader.getLocalName())
       } catch {
         case ex: Exception =>
           logger.error("Caught Exception reader XML after we've already seen the closing tag: "+ex.getMessage)

@@ -15,7 +15,6 @@
  */
 package fm.xml
 
-import fm.common.Logging
 import java.io.StringReader
 import org.scalatest.{FunSuite, Matchers}
 import scala.beans.BeanProperty
@@ -28,8 +27,8 @@ final class SimpleFeedPrice {
   override def toString: String = s"SimpleFeedPrice($uniqueId, $price)"
 }
 
-// This is mostly a clone of `TestXmlReaderWriter`, except reading multiple different elements
-final class TestMultiXmlReaderWriter extends FunSuite with Matchers with Logging {
+// This is mostly a clone of `TestXmlReader`, except reading multiple different elements
+final class TestMultiXmlReader extends FunSuite with Matchers {
   private def verifySimple(xml: String) {
 
     val reader = makeReader(xml)

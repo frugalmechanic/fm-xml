@@ -27,13 +27,13 @@ object XmlReaderPath {
   def apply[XmlValue: ClassTag](itemPath: String): XmlReaderPath[XmlValue, XmlValue] = XmlReaderPath[XmlValue, XmlValue](itemPath, identity)
 
   sealed trait XmlReaderPathMatchType {
-    def isPrefixMatch: Boolean = this === XmlReaderPathMatchType.PrefixMatches
-    def isElementMatch: Boolean = this === XmlReaderPathMatchType.ElementMatches
+    def isPrefixMatch: Boolean = this === XmlReaderPathMatchType.PrefixMatch
+    def isFullMatch: Boolean = this === XmlReaderPathMatchType.FullMatch
     def isNoMatch: Boolean = this === XmlReaderPathMatchType.NoMatch
   }
   object XmlReaderPathMatchType {
-    case object ElementMatches extends XmlReaderPathMatchType
-    case object PrefixMatches extends XmlReaderPathMatchType
+    case object FullMatch extends XmlReaderPathMatchType
+    case object PrefixMatch extends XmlReaderPathMatchType
     case object NoMatch extends XmlReaderPathMatchType
   }
 }
@@ -80,10 +80,10 @@ final case class XmlReaderPath[XmlValue: ClassTag, MappedXmlValue](
     *
     * Example: if the itemPath is "items/part" then:
     *
-    *   When currentPath is Seq("items") the match type will be XmlReaderPathMatchType.PrefixMatches
-    *   When currentPath is Seq("items", "part") the match type will be XmlReaderPathMatchType.ElementMatches
-    *   When currentPath is Seq("items", "price") the match type will be XmlReaderPathMatchType.NoMatch
-    *   When currentPath is Seq("prices") the match type will be XmlReaderPathMatchType.NoMatch
+    *   When currentPath is IndexedSeq("items") the match type will be XmlReaderPathMatchType.PrefixMatch
+    *   When currentPath is IndexedSeq("items", "part") the match type will be XmlReaderPathMatchType.FullMatch
+    *   When currentPath is IndexedSeq("items", "price") the match type will be XmlReaderPathMatchType.NoMatch
+    *   When currentPath is IndexedSeq("prices") the match type will be XmlReaderPathMatchType.NoMatch
     *
     * @param currentPath An IndexedSeq of the current nested XML-element tree.  (e.g. "items/part/price" => Seq("items", "part", "price")
     * @return
@@ -92,16 +92,14 @@ final case class XmlReaderPath[XmlValue: ClassTag, MappedXmlValue](
     if (currentPath.isEmpty || currentPath.length > targetDepth) return XmlReaderPathMatchType.NoMatch
 
     // Optimized to avoid a closure
-    var matches: Int = 0
     var idx: Int = 0
 
-    while (matches === idx && idx < currentPath.length) {
-      if (currentPath(idx) === path(idx)) matches += 1
+    while (idx < currentPath.length && currentPath(idx) === path(idx)) {
       idx += 1
     }
 
-    if (matches === targetDepth) XmlReaderPathMatchType.ElementMatches
-    else if (matches === currentPath.length) XmlReaderPathMatchType.PrefixMatches
+    if (idx === targetDepth) XmlReaderPathMatchType.FullMatch
+    else if (idx === currentPath.length) XmlReaderPathMatchType.PrefixMatch
     else XmlReaderPathMatchType.NoMatch
   }
 
