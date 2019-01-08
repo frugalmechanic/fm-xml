@@ -25,7 +25,7 @@ object XmlReaderFactory {
     rootName: String,
     itemName: String,
     defaultNamespaceURI: String = "",
-    overrideDefaultNamespaceURI: String = "",
+    overrideDefaultNamespaceURI: String = ""
   ): XmlReaderFactory[T] = {
     new XmlReaderFactory(rootName, defaultNamespaceURI = defaultNamespaceURI, overrideDefaultNamespaceURI = overrideDefaultNamespaceURI, IndexedSeq(XmlReaderPath(itemName)))
   }
