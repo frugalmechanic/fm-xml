@@ -4,9 +4,9 @@ name := "fm-xml"
 
 description := "XML utilities"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.11"
 
-crossScalaVersions := Seq("2.11.11", "2.12.8")
+crossScalaVersions := Seq("2.11.12", "2.12.11")
 
 scalacOptions := Seq(
   "-unchecked",
@@ -32,5 +32,5 @@ libraryDependencies ++= Seq(
   "com.sun.xml.bind" % "jaxb-impl" % "2.3.1", // JAXB - Needed for Java 9+ since it is no longer automatically available
   "javax.xml.bind" % "jaxb-api" % "2.3.1", // JAXB - Needed for Java 9+ since it is no longer automatically available
   "javax.activation" % "javax.activation-api" % "1.2.0", // JAXB - Needed for Java 9+ since it is no longer automatically available
-  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 )
