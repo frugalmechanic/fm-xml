@@ -4,9 +4,9 @@ name := "fm-xml"
 
 description := "XML utilities"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.13"
 
-crossScalaVersions := Seq("2.11.11", "2.12.8")
+crossScalaVersions := Seq("2.11.12", "2.12.13")
 
 scalacOptions := Seq(
   "-unchecked",
@@ -24,8 +24,8 @@ scalacOptions := Seq(
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 
 libraryDependencies ++= Seq(
-  "com.frugalmechanic" %% "fm-common" % "0.35.0",
-  "com.frugalmechanic" %% "fm-lazyseq" % "0.12.0",
+  "com.frugalmechanic" %% "fm-common" % "0.50.0",
+  "com.frugalmechanic" %% "fm-lazyseq" % "0.14.0",
   "com.frugalmechanic" %% "scala-optparse" % "1.1.3",
   "com.fasterxml.woodstox" % "woodstox-core" % "5.1.0",
   "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1", // JAXB - Needed for Java 9+ since it is no longer automatically available
