@@ -4,9 +4,9 @@ name := "fm-xml"
 
 description := "XML utilities"
 
-scalaVersion := "2.12.13"
+scalaVersion := "2.12.14"
 
-crossScalaVersions := Seq("2.11.12", "2.12.13")
+crossScalaVersions := Seq("2.12.14")
 
 scalacOptions := Seq(
   "-unchecked",
