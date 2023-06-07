@@ -209,7 +209,7 @@ final class RichXMLStreamReader2(val sr: XMLStreamReader2) extends AnyVal {
 
     import Resource.toCloseable
 
-    Resource.using(outputFactory.createXMLStreamWriter(sw).asInstanceOf[XMLStreamWriter2]) { writer: XMLStreamWriter2 =>
+    Resource.using(outputFactory.createXMLStreamWriter(sw).asInstanceOf[XMLStreamWriter2]) { (writer: XMLStreamWriter2) =>
       val startingDepth: Int = sr.getDepth()
       var done: Boolean = false
 

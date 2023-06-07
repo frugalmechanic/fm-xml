@@ -53,8 +53,8 @@ object XmlFormatter {
   }
   
   def format(in: Reader, out: Writer): Unit = {
-    Resource.using(makeXMLStreamReader(in)) { sr: XMLStreamReader =>
-      Resource.using(makeXMLStreamWriter(out)) { sw: XMLStreamWriter =>
+    Resource.using(makeXMLStreamReader(in)) { (sr: XMLStreamReader) =>
+      Resource.using(makeXMLStreamWriter(out)) { (sw: XMLStreamWriter) =>
         format(sr, sw)
       }
     }

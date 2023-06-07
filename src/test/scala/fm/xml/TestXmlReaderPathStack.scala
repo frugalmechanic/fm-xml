@@ -1,8 +1,9 @@
 package fm.xml
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-final class TestXmlReaderPathStack extends FunSuite with Matchers {
+final class TestXmlReaderPathStack extends AnyFunSuite with Matchers {
   test("Single Element Stack") {
     val stack: XmlReaderPathStack = new XmlReaderPathStack(1)
 

@@ -86,7 +86,7 @@ final class Jaxb2Marshaller(context: JAXBContext) extends Logging {
   
   setMarshallerProperties()
 
-  private def setMarshallerProperties() {
+  private def setMarshallerProperties(): Unit = {
     marshaller.setProperty(Marshaller.JAXB_FRAGMENT, doFragment)
     marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, doFormatted)
     marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8")

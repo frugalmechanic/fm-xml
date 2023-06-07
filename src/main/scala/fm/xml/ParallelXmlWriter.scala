@@ -56,14 +56,14 @@ final case class ParallelXmlWriter[T](classes: Seq[Class[_]], rootName: String, 
     writeXml(s"<?xml version='1.0' encoding='$encoding'?>\n")
     writeXml(s"<$rootName>\n")
     
-    reader.grouped(8).parMap{ items: IndexedSeq[T] =>
+    reader.grouped(8).parMap{ (items: IndexedSeq[T]) =>
       val bos: ByteArrayOutputStream = new ByteArrayOutputStream
       val m: Marshaller = marshaller.get
       items.foreach { item =>
         m.marshal(item, bos)
       }
       bos
-    }.foreach { xmlBytes: ByteArrayOutputStream =>
+    }.foreach { (xmlBytes: ByteArrayOutputStream) =>
       xmlBytes.writeTo(outputStream)
     }
     

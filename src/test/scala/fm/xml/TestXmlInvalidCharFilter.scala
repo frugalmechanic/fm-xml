@@ -16,9 +16,10 @@
 package fm.xml
 
 import java.io.{Reader, StringReader}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class TestXmlInvalidCharFilter extends FunSuite with Matchers {
+class TestXmlInvalidCharFilter extends AnyFunSuite with Matchers {
   def check(readFrom: String, readInto: String = null, offset: Int = 0, len: Int = -1): String = {
     val reader: Reader = XmlInvalidCharFilter(new StringReader(readFrom))
     val charactersToRead = if(len < 0) readFrom.size else len

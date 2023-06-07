@@ -16,7 +16,8 @@
 package fm.xml
 
 import java.io.StringReader
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import scala.beans.BeanProperty
 
 
@@ -28,25 +29,25 @@ final class SimpleFeedPrice {
 }
 
 // This is mostly a clone of `TestXmlReader`, except reading multiple different elements
-final class TestMultiXmlReader extends FunSuite with Matchers {
-  private def verifySimple(xml: String) {
+final class TestMultiXmlReader extends AnyFunSuite with Matchers {
+  private def verifySimple(xml: String): Unit = {
 
     val reader = makeReader(xml)
     reader.hasNext should equal(true)
 
-    val one = reader.next
+    val one = reader.next()
     checkOnePart(one)
     reader.hasNext should equal(true)
 
-    val onePrice = reader.next
+    val onePrice = reader.next()
     checkOnePrice(onePrice)
     reader.hasNext should equal(true)
 
-    val two = reader.next
+    val two = reader.next()
     checkTwoPart(two)
     reader.hasNext should equal(true)
 
-    val twoPrice = reader.next
+    val twoPrice = reader.next()
     checkTwoPrice(twoPrice)
 
     reader.hasNext should equal(false)
@@ -172,13 +173,13 @@ final class TestMultiXmlReader extends FunSuite with Matchers {
     // This should only read the <one> element
     val oneReader = makeReader(mixedPartXml, paths=Seq(OnePartPath))
     oneReader.hasNext should equal(true)
-    checkOnePart(oneReader.next)
+    checkOnePart(oneReader.next())
     oneReader.hasNext should equal(false)
 
     // This should only read the <two> element
     val twoReader = makeReader(mixedPartXml, paths=Seq(TwoPartPath))
     twoReader.hasNext should equal(true)
-    checkTwoPart(twoReader.next)
+    checkTwoPart(twoReader.next())
     twoReader.hasNext should equal(false)
   }
 
@@ -205,9 +206,9 @@ final class TestMultiXmlReader extends FunSuite with Matchers {
   test("Nested Part - Reading") {
     val reader = makeReader(nestedPartXml, paths=Seq(NestedItemsPartPath, NestedItemsPricePath))
     reader.hasNext should equal(true)
-    checkOnePart(reader.next)
+    checkOnePart(reader.next())
     reader.hasNext should equal(true)
-    checkTwoPart(reader.next)
+    checkTwoPart(reader.next())
     reader.hasNext should equal(false)
   }
 
@@ -245,16 +246,16 @@ final class TestMultiXmlReader extends FunSuite with Matchers {
   test("Deep Nested Part - Reading") {
     val reader = makeReader(deepNestedPartXml, paths=Seq(DeepNestedPartPath, DeepNestedPricePath))
     reader.hasNext should equal(true)
-    checkOnePart(reader.next)
+    checkOnePart(reader.next())
 
     reader.hasNext should equal(true)
-    checkOnePrice(reader.next)
+    checkOnePrice(reader.next())
 
     reader.hasNext should equal(true)
-    checkTwoPart(reader.next)
+    checkTwoPart(reader.next())
 
     reader.hasNext should equal(true)
-    checkTwoPrice(reader.next)
+    checkTwoPrice(reader.next())
 
     reader.hasNext should equal(false)
   }
@@ -317,28 +318,28 @@ final class TestMultiXmlReader extends FunSuite with Matchers {
   test("Multi-Nested Part - Reading") {
     val reader = makeReader(multiNestedPartXml, paths=Seq(NestedItemsPartPath, NestedItemsPricePath))
     reader.hasNext should equal(true)
-    checkOnePart(reader.next)
+    checkOnePart(reader.next())
 
     reader.hasNext should equal(true)
-    checkOnePrice(reader.next)
+    checkOnePrice(reader.next())
 
     reader.hasNext should equal(true)
-    checkTwoPart(reader.next)
+    checkTwoPart(reader.next())
 
     reader.hasNext should equal(true)
-    checkTwoPrice(reader.next)
+    checkTwoPrice(reader.next())
 
     reader.hasNext should equal(true)
-    checkOnePart(reader.next)
+    checkOnePart(reader.next())
 
     reader.hasNext should equal(true)
-    checkOnePrice(reader.next)
+    checkOnePrice(reader.next())
 
     reader.hasNext should equal(true)
-    checkTwoPart(reader.next)
+    checkTwoPart(reader.next())
 
     reader.hasNext should equal(true)
-    checkTwoPrice(reader.next)
+    checkTwoPrice(reader.next())
 
     reader.hasNext should equal(false)
   }
@@ -358,7 +359,7 @@ final class TestMultiXmlReader extends FunSuite with Matchers {
     reader.hasNext should equal(false)
   }
 
-  trait MyPathValue extends AnyRef
+  sealed trait MyPathValue extends AnyRef
 
   case class PartPathValue(value: SimpleFeedPart) extends MyPathValue
   case class PricePathValue(value: SimpleFeedPrice) extends MyPathValue
@@ -421,13 +422,13 @@ final class TestMultiXmlReader extends FunSuite with Matchers {
     }
   }
 
-  private def checkPart(part: SimpleFeedPart, uniqueId: String, source: String, name: String) {
+  private def checkPart(part: SimpleFeedPart, uniqueId: String, source: String, name: String): Unit = {
     part.uniqueId should equal(uniqueId)
     part.source should equal(source)
     part.name should equal(name)
   }
 
-  private def checkPrice(part: SimpleFeedPrice, uniqueId: String, price: Double) {
+  private def checkPrice(part: SimpleFeedPrice, uniqueId: String, price: Double): Unit = {
     part.uniqueId should equal(uniqueId)
     part.price should equal(price)
   }

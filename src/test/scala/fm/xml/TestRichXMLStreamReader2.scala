@@ -17,14 +17,15 @@ package fm.xml
 
 import com.ctc.wstx.stax.WstxInputFactory
 import org.codehaus.stax2.XMLStreamReader2
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import java.io.StringReader
 import javax.xml.stream.{XMLInputFactory, XMLStreamException}
 import javax.xml.stream.XMLStreamConstants.START_ELEMENT
 
 import RichXMLStreamReader2.toRichXMLStreamReader2
 
-final class TestRichXMLStreamReader2 extends FunSuite with Matchers {
+final class TestRichXMLStreamReader2 extends AnyFunSuite with Matchers {
   
   test("seekToRootElement()") {
     val sr: XMLStreamReader2 = createSR()
@@ -85,7 +86,7 @@ final class TestRichXMLStreamReader2 extends FunSuite with Matchers {
       builder += sr.readChildElementText("name")
     }
     
-    builder.result should equal (Vector("Item 1 Name", "Item 2 Name"))
+    builder.result() should equal (Vector("Item 1 Name", "Item 2 Name"))
   }
   
   test("foreach - root/items/item/name") {
@@ -96,7 +97,7 @@ final class TestRichXMLStreamReader2 extends FunSuite with Matchers {
       builder += sr.readElementText()
     }
     
-    builder.result should equal (Vector("Item 1 Name", "Item 2 Name"))
+    builder.result() should equal (Vector("Item 1 Name", "Item 2 Name"))
   }
 
   test("readElementAsXMLString - 1") {
@@ -104,7 +105,7 @@ final class TestRichXMLStreamReader2 extends FunSuite with Matchers {
 
     sr.seekToRootElement()
     sr.seekToChildElement("items")
-    sr.readElementAsXMLString should equal (
+    sr.readElementAsXMLString() should equal (
       """<items>
         |    <item idx="1">
         |      <name>Item 1 Name</name>
@@ -129,7 +130,7 @@ final class TestRichXMLStreamReader2 extends FunSuite with Matchers {
     sr.seekToRootElement()
     sr.seekToChildElement("items") // The outer <items> element
     sr.seekToChildElement("items") // The inner nested <items> element
-    sr.readElementAsXMLString should equal (
+    sr.readElementAsXMLString() should equal (
       """<items foo="bar">
         |      <item idx="1">
         |        <name>Sub Item 1 name</name>
@@ -148,7 +149,7 @@ final class TestRichXMLStreamReader2 extends FunSuite with Matchers {
     inputFactory.createXMLStreamReader(new StringReader(xml)).asInstanceOf[XMLStreamReader2]
   }
   
-val xml = """
+  val xml: String = """
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
   <header>

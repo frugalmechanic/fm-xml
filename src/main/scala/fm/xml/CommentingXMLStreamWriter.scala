@@ -140,14 +140,14 @@ final case class CommentingXMLStreamWriter(protected val self: IndentingXMLStrea
     val value: Option[String] = buffer.collect{ case txt: Text => txt.data }.mkString("").toBlankOption
     
     // Comments before the start element
-    comments.leadingComment(localNamePath, attributes, value).foreach{ comment: String =>
+    comments.leadingComment(localNamePath, attributes, value).foreach{ (comment: String) =>
       self.writeIndentedComment(comment.requireLeading(" ").requireTrailing(" "))
     }
     
-    buffer.foreach{ command: Command => command(self) }
+    buffer.foreach{ (command: Command) => command(self) }
     
     // Comments after the end element (or the start element if there are nested elements under this one)
-    comments.trailingComment(localNamePath, attributes, value).foreach{ comment: String =>
+    comments.trailingComment(localNamePath, attributes, value).foreach{ (comment: String) =>
       self.writeCharacters(" ")
       self.writeComment(comment.requireLeading(" ").requireTrailing(" "))
     }

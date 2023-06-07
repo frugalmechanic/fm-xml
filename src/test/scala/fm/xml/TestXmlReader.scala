@@ -16,7 +16,8 @@
 package fm.xml
 
 import java.io.StringReader
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import scala.beans.BeanProperty
 
 final class SimpleFeedPart {
@@ -27,7 +28,7 @@ final class SimpleFeedPart {
   override def toString: String = s"SimpleFeedPart($uniqueId, $source, $name)"
 }
 
-final class TestXmlReader extends FunSuite with Matchers {
+final class TestXmlReader extends AnyFunSuite with Matchers {
 
   test("getRootElementName") {
     XmlReader.getRootElementName("") should equal (None)
@@ -46,9 +47,9 @@ final class TestXmlReader extends FunSuite with Matchers {
   private def verifySimple(xml: String): Unit = {
     val reader = makeReader(xml)
     reader.hasNext should equal(true)
-    checkOne(reader.next)
+    checkOne(reader.next())
     reader.hasNext should equal(true)
-    checkTwo(reader.next)
+    checkTwo(reader.next())
     reader.hasNext should equal(false)
   }
 
@@ -137,13 +138,13 @@ final class TestXmlReader extends FunSuite with Matchers {
     // This should only read the <one> element
     val oneReader = makeReader(mixedPartXml, item="one")
     oneReader.hasNext should equal(true)
-    checkOne(oneReader.next)
+    checkOne(oneReader.next())
     oneReader.hasNext should equal(false)
 
     // This should only read the <two> element
     val twoReader = makeReader(mixedPartXml, item="two")
     twoReader.hasNext should equal(true)
-    checkTwo(twoReader.next)
+    checkTwo(twoReader.next())
     twoReader.hasNext should equal(false)
   }
 
@@ -169,9 +170,9 @@ final class TestXmlReader extends FunSuite with Matchers {
   test("Nested Part - Reading") {
     val reader = makeReader(nestedPartXml, item="items/part")
     reader.hasNext should equal(true)
-    checkOne(reader.next)
+    checkOne(reader.next())
     reader.hasNext should equal(true)
-    checkTwo(reader.next)
+    checkTwo(reader.next())
     reader.hasNext should equal(false)
   }
 
@@ -201,9 +202,9 @@ final class TestXmlReader extends FunSuite with Matchers {
   test("Deep Nested Part - Reading") {
     val reader = makeReader(deepNestedPartXml, item="items/items2/items3/part")
     reader.hasNext should equal(true)
-    checkOne(reader.next)
+    checkOne(reader.next())
     reader.hasNext should equal(true)
-    checkTwo(reader.next)
+    checkTwo(reader.next())
     reader.hasNext should equal(false)
   }
 
@@ -247,13 +248,13 @@ final class TestXmlReader extends FunSuite with Matchers {
   test("Multi-Nested Part - Reading") {
     val reader = makeReader(multiNestedPartXml, item="items/part")
     reader.hasNext should equal(true)
-    checkOne(reader.next)
+    checkOne(reader.next())
     reader.hasNext should equal(true)
-    checkTwo(reader.next)
+    checkTwo(reader.next())
     reader.hasNext should equal(true)
-    checkOne(reader.next)
+    checkOne(reader.next())
     reader.hasNext should equal(true)
-    checkTwo(reader.next)
+    checkTwo(reader.next())
     reader.hasNext should equal(false)
   }
 

@@ -81,7 +81,7 @@ object XmlReader {
   def getRootElementName(xml: String): Option[String] = {
     if (xml.isNullOrBlank) return None
 
-    withXMLStreamReader2(xml){ reader: XMLStreamReader2 =>
+    withXMLStreamReader2(xml){ (reader: XMLStreamReader2) =>
       Try {
         reader.seekToRootElement()
         reader.getLocalName
@@ -146,7 +146,7 @@ final case class XmlReader[T](
 
     import Resource.toCloseable
 
-    Resource.using(wrapXMLStreamReader2(inputFactory.createXMLStreamReader(XmlInvalidCharFilter(reader)).asInstanceOf[XMLStreamReader2])) { xmlStreamReader: XMLStreamReader2 =>
+    Resource.using(wrapXMLStreamReader2(inputFactory.createXMLStreamReader(XmlInvalidCharFilter(reader)).asInstanceOf[XMLStreamReader2])) { (xmlStreamReader: XMLStreamReader2) =>
       var done: Boolean = false
 
       val maxPathDepth: Int = targets.map{ _.targetDepth }.max

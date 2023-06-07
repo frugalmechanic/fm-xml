@@ -54,7 +54,7 @@ object XMLValidator {
     }
     
     def result(): ValidationResult = {
-      if (validationErrorCount > 0) ValidationFailed(validationErrorCount, validationErrors.result) else Success
+      if (validationErrorCount > 0) ValidationFailed(validationErrorCount, validationErrors.result()) else Success
     }
   }
   
@@ -136,7 +136,7 @@ object XMLValidator {
     
     import Resource.toCloseable // Need this implicit for the next line to work
     
-    SingleUseResource(inputFactory.createXMLStreamReader(xml).asInstanceOf[XMLStreamReader2]).use { sr: XMLStreamReader2 =>
+    SingleUseResource(inputFactory.createXMLStreamReader(xml).asInstanceOf[XMLStreamReader2]).use { (sr: XMLStreamReader2) =>
 
       val resultBuilder: ValidationResultBuilder = validate(xsd, sr, limit)
       
